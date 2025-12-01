@@ -1,0 +1,13 @@
+[tools]
+node = "24"
+python = "3.12"
+uv = "latest"
+
+[tasks.setup]
+description = "Set up the development environment"
+run = """
+chmod +x .mise/tasks/dev.py
+uv venv --clear
+uv pip install rich
+npm install
+"""
