@@ -271,7 +271,8 @@ function formatDate(dateString) {
         <span class="pill muted">{tasks.length} recordatorios</span>
       </div>
     </div>
-    <div class="pulse" aria-hidden="true"><img src="https://png.pngtree.com/png-vector/20240717/ourmid/pngtree-axolotl-on-white-background-png-image_13135659.png"></div>
+    <div class="pulse" aria-hidden="true"><img src="https://png.pngtree.com/png-vector/20240717/ourmid/pngtree-axolotl-on-white-background-png-image_13135659.png"
+      alt="Ajolote flotando"></div>
   </section>
 
   <section class="card auth">
