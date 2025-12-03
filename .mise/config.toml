@@ -4,10 +4,31 @@ python = "3.12"
 uv = "latest"
 
 [tasks.setup]
-description = "Set up the development environment"
+description = "Set up the development local environment"
 run = """
-chmod +x .mise/tasks/dev.py
+chmod +x .mise/tasks/dev_local.py
 uv venv --clear
-uv pip install rich
+uv pip install rich boto3
 npm install
 """
+
+[tasks.dev]
+description = "Run the frontend development server"
+run = "npm run dev"
+
+[tasks.sam_build]
+description = "Build the AWS SAM application"
+dir = "aws/local"
+run = "sam build --use-container"
+
+[tasks.sam_start]
+description = "Start the AWS SAM application locally"
+depends = ["sam_build"]
+dir = "aws/local"
+run = "sam local start-api"
+
+[tasks.sam_test_event]
+description = "Test an event against the local AWS SAM application"
+depends = ["sam_build"]
+dir = "aws/local"
+run = "sam local invoke AjoloT --event events/register.json"

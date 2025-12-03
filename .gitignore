@@ -28,3 +28,6 @@ vite.config.ts.timestamp-*
 # Python
 __pycache__/
 .venv/
+
+# AWS
+.aws-sam/
