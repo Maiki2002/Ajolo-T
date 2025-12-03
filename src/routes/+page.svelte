@@ -1,8 +1,9 @@
 <script>
   // @ts-nocheck
   import { onMount } from "svelte";
+  import { PUBLIC_API_BASE_URL } from '$env/static/public';
 
-  const API_BASE = "https://az2dvhsqsadxt45e67jms3tfm40grkkd.lambda-url.us-east-1.on.aws";
+  const API_BASE = PUBLIC_API_BASE_URL;
 
   let token = "";
   let user = null;
