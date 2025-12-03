@@ -1,0 +1,11 @@
+{
+  "version": "2.0",
+  "routeKey": "POST /register",
+  "rawPath": "/register",
+  "requestContext": {
+    "http": { "method": "POST", "path": "/register" }
+  },
+  "headers": { "content-type": "application/json" },
+  "body": "{\"username\":\"demo\",\"password\":\"secret\"}",
+  "isBase64Encoded": false
+}
