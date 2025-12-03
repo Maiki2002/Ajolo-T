@@ -3,19 +3,35 @@ node = "24"
 python = "3.12"
 uv = "latest"
 
+[tasks._setup_vue]
+description = "Set up the development local environment for vue project"
+dir = "vue"
+hide = true
+run = "npm install"
+
+[tasks._setup_svelte]
+description = "Set up the development local environment for svelte project"
+dir = "svelte"
+hide = true
+run = "npm install"
+
 [tasks.setup]
 description = "Set up the development local environment"
+depends = ["_setup_vue", "_setup_svelte"]
 run = """
 chmod +x .mise/tasks/dev_local.py
 uv venv --clear
 uv pip install rich boto3
-cd svelte
-npm install
 """
 
 [tasks.dev_svelte]
 description = "Run the frontend development server"
 dir = "svelte"
+run = "npm run dev"
+
+[tasks.dev_vue]
+description = "Run the frontend development server"
+dir = "vue"
 run = "npm run dev"
 
 [tasks.sam_build]
