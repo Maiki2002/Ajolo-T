@@ -1,255 +1,281 @@
 <script>
-// @ts-nocheck
-import { onMount } from 'svelte';
+  // @ts-nocheck
+  import { onMount } from "svelte";
 
-const API_BASE = 'http://localhost:3000';
+  const API_BASE = "https://az2dvhsqsadxt45e67jms3tfm40grkkd.lambda-url.us-east-1.on.aws";
 
-let token = '';
-let user = null;
-let logging = false;
-let loginError = '';
-let showRegister = false;
+  let token = "";
+  let user = null;
+  let logging = false;
+  let loginError = "";
+  let showRegister = false;
 
-// Login form
-let username = '';
-let password = '';
+  // Login form
+  let username = "";
+  let password = "";
 
-// Estado de tareas
-let tasks = [];
-let showForm = false;
-let title = '';
-let description = '';
-let loading = false;
-let error = '';
+  // Estado de tareas
+  let tasks = [];
+  let showForm = false;
+  let title = "";
+  let description = "";
+  let loading = false;
+  let error = "";
 
-// Editing
-let editingUuid = '';
+  // Editing
+  let editingUuid = "";
 
-// Guardar o limpiar token/usuario de localStorage
-function setToken(t, u) {
-  token = t || '';
-  user = u || null;
-  if (typeof localStorage !== 'undefined') {
-    if (token) localStorage.setItem('token', token);
-    else localStorage.removeItem('token');
-    if (user) localStorage.setItem('user', JSON.stringify(user));
-    else localStorage.removeItem('user');
+  // Guardar o limpiar token/usuario de localStorage
+  function setToken(t, u) {
+    token = t || "";
+    user = u || null;
+    if (typeof localStorage !== "undefined") {
+      if (token) localStorage.setItem("token", token);
+      else localStorage.removeItem("token");
+      if (user) localStorage.setItem("user", JSON.stringify(user));
+      else localStorage.removeItem("user");
+    }
   }
-}
 
-// -------------------------------------------
-// POST /register → Registrar usuario
-// -------------------------------------------
-async function register() {
-  loginError = '';
-  if (!username || !password) {
-    loginError = 'Usuario y contraseña requeridos';
-    return;
+  // -------------------------------------------
+  // POST /register → Registrar usuario
+  // -------------------------------------------
+  async function register() {
+    loginError = "";
+    if (!username || !password) {
+      loginError = "Usuario y contraseña requeridos";
+      return;
+    }
+    logging = true;
+
+    try {
+      const res = await fetch(`${API_BASE}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: username.trim(),
+          password: password.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error || "Registro falló");
+      }
+
+      // Login
+      await login();
+    } catch (e) {
+      loginError = e && e.message ? e.message : String(e);
+    } finally {
+      logging = false;
+    }
   }
-  logging = true;
 
-  try {
-    const res = await fetch(`${API_BASE}/register`, {
-      method: 'POST', // PETICIÓN POST PARA REGISTRARSE
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
-    });
+  // -------------------------------------------
+  // POST /login → Iniciar sesión
+  // -------------------------------------------
+  async function login() {
+    loginError = "";
+    if (!username || !password) {
+      loginError = "Usuario y contraseña requeridos";
+      return;
+    }
+    logging = true;
 
-    if (!res.ok) {
+    try {
+      const res = await fetch(`${API_BASE}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: username.trim(),
+          password: password.trim(),
+        }),
+      });
+
       const body = await res.json();
-      throw new Error(body.error || 'Registro falló');
+      if (!res.ok) throw new Error(body.error || "Login failed");
+
+      setToken(body.token, body.user);
+
+      // Cargar tareas después de iniciar sesión
+      await fetchTasks();
+    } catch (e) {
+      loginError = e && e.message ? e.message : String(e);
+    } finally {
+      logging = false;
     }
-
-    // Login
-    await login();
-  } catch (e) {
-    loginError = (e && e.message) ? e.message : String(e);
-  } finally {
-    logging = false;
   }
-}
 
-// -------------------------------------------
-// POST /login → Iniciar sesión
-// -------------------------------------------
-async function login() {
-  loginError = '';
-  if (!username || !password) {
-    loginError = 'Usuario y contraseña requeridos';
-    return;
+  // Cerrar sesión
+  function logout() {
+    setToken("", null);
+    tasks = [];
   }
-  logging = true;
 
-  try {
-    const res = await fetch(`${API_BASE}/login`, {
-      method: 'POST', // PETICIÓN POST PARA LOGIN
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
-    });
+  // -------------------------------------------
+  // GET /tasks → Obtener todas las tareas del usuario
+  // -------------------------------------------
+  async function fetchTasks() {
+    if (!token) return;
+    loading = true;
+    error = "";
 
-    const body = await res.json();
-    if (!res.ok) throw new Error(body.error || 'Login failed');
-
-    setToken(body.token, body.user);
-
-    // Cargar tareas después de iniciar sesión
-    await fetchTasks();
-  } catch (e) {
-    loginError = (e && e.message) ? e.message : String(e);
-  } finally {
-    logging = false;
-  }
-}
-
-// Cerrar sesión
-function logout() {
-  setToken('', null);
-  tasks = [];
-}
-
-// -------------------------------------------
-// GET /tasks → Obtener todas las tareas del usuario
-// -------------------------------------------
-async function fetchTasks() {
-  if (!token) return;
-  loading = true;
-  error = '';
-
-  try {
-    const res = await fetch(`${API_BASE}/tasks`, {
-      method: 'GET', // PETICIÓN GET PARA CARGAR TAREAS
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (!res.ok) throw new Error('No se pudieron cargar las tareas');
-    tasks = await res.json();
-  } catch (e) {
-    error = (e && e.message) ? e.message : String(e);
-  } finally {
-    loading = false;
-  }
-}
-
-// -------------------------------------------
-// POST /tasks → Crear tarea
-// PUT /tasks/:uuid → Editar tarea
-// -------------------------------------------
-async function addTask() {
-  if (!title.trim()) return;
-  loading = true;
-  error = '';
-
-  try {
-    // Si estamos editando una tarea
-    if (editingUuid) {
-      const res = await fetch(`${API_BASE}/tasks/${editingUuid}`, {
-        method: 'PUT', // PETICIÓN PUT PARA ACTUALIZAR TAREA
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim()
-        })
-      });
-
-      if (!res.ok) {
-        const b = await res.json().catch(() => null);
-        throw new Error((b && (b.error || b.message)) ? (b.error || b.message) : 'Error actualizando tarea');
-      }
-
-      const updated = await res.json();
-      tasks = tasks.map((t) => t.uuid === updated.uuid ? updated : t);
-      editingUuid = '';
-    } else {
-      // Crear nueva tarea
+    try {
       const res = await fetch(`${API_BASE}/tasks`, {
-        method: 'POST', // PETICIÓN POST PARA CREAR TAREA
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim()
-        })
       });
 
-      if (!res.ok) {
-        const b = await res.json().catch(() => null);
-        throw new Error((b && (b.error || b.message)) ? (b.error || b.message) : 'Error creando tarea');
+      if (!res.ok) throw new Error("No se pudieron cargar las tareas");
+      tasks = await res.json();
+    } catch (e) {
+      error = e && e.message ? e.message : String(e);
+    } finally {
+      loading = false;
+    }
+  }
+
+  // -------------------------------------------
+  // POST /tasks → Crear tarea
+  // PUT /tasks/:uuid → Editar tarea
+  // -------------------------------------------
+  async function addTask() {
+    if (!title.trim()) return;
+    loading = true;
+    error = "";
+
+    try {
+      // Si estamos editando una tarea
+      if (editingUuid) {
+        const res = await fetch(`${API_BASE}/tasks/${editingUuid}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            title: title.trim(),
+            description: description.trim(),
+          }),
+        });
+
+        if (!res.ok) {
+          const b = await res.json().catch(() => null);
+          throw new Error(
+            b && (b.error || b.message)
+              ? b.error || b.message
+              : "Error actualizando tarea"
+          );
+        }
+
+        const updated = await res.json();
+        tasks = tasks.map((t) => (t.uuid === updated.uuid ? updated : t));
+        editingUuid = "";
+      } else {
+        // Crear nueva tarea
+        const res = await fetch(`${API_BASE}/tasks`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            title: title.trim(),
+            description: description.trim(),
+          }),
+        });
+
+        if (!res.ok) {
+          const b = await res.json().catch(() => null);
+          throw new Error(
+            b && (b.error || b.message)
+              ? b.error || b.message
+              : "Error creando tarea"
+          );
+        }
+
+        const created = await res.json();
+        tasks = [created, ...tasks];
       }
 
-      const created = await res.json();
-      tasks = [created, ...tasks];
+      title = "";
+      description = "";
+      showForm = false;
+    } catch (e) {
+      error = e && e.message ? e.message : String(e);
+    } finally {
+      loading = false;
     }
-
-    title = '';
-    description = '';
-    showForm = false;
-  } catch (e) {
-    error = (e && e.message) ? e.message : String(e);
-  } finally {
-    loading = false;
   }
-}
 
-// Cargar datos de tarea en el formulario
-function editTask(task) {
-  editingUuid = task.uuid;
-  title = task.title || '';
-  description = task.description || '';
-  showForm = true;
-}
+  // Cargar datos de tarea en el formulario
+  function editTask(task) {
+    editingUuid = task.uuid;
+    title = task.title || "";
+    description = task.description || "";
+    showForm = true;
+  }
 
-// -------------------------------------------
-// DELETE /tasks/:uuid → Eliminar tarea
-// -------------------------------------------
-async function deleteTask(uuid) {
-  if (!confirm('¿Eliminar este recordatorio?')) return;
+  // -------------------------------------------
+  // DELETE /tasks/:uuid → Eliminar tarea
+  // -------------------------------------------
+  async function deleteTask(uuid) {
+    if (!confirm("¿Eliminar este recordatorio?")) return;
 
-  try {
-    const res = await fetch(`${API_BASE}/tasks/${uuid}`, {
-      method: 'DELETE', // PETICIÓN DELETE PARA ELIMINAR TAREA
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    try {
+      const res = await fetch(`${API_BASE}/tasks/${uuid}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    if (res.status === 204) {
-      tasks = tasks.filter((t) => t.uuid !== uuid);
-    } else {
-      const body = await res.json().catch(() => null);
-      throw new Error((body && (body.error || body.message)) ? (body.error || body.message) : 'Error eliminando');
+      if (res.status === 204) {
+        tasks = tasks.filter((t) => t.uuid !== uuid);
+      } else {
+        const body = await res.json().catch(() => null);
+        throw new Error(
+          body && (body.error || body.message)
+            ? body.error || body.message
+            : "Error eliminando"
+        );
+      }
+    } catch (e) {
+      error = e && e.message ? e.message : String(e);
     }
-  } catch (e) {
-    error = (e && e.message) ? e.message : String(e);
   }
-}
 
-// Restaurar sesión del localStorage al cargar la página
-onMount(() => {
-  try {
-    const t = localStorage.getItem('token');
-    const u = localStorage.getItem('user');
+  // Restaurar sesión del localStorage al cargar la página
+  onMount(() => {
+    try {
+      const t = localStorage.getItem("token");
+      const u = localStorage.getItem("user");
 
-    if (t) {
-      const parsedUser = u ? JSON.parse(u) : null;
-      setToken(t, parsedUser);
-      fetchTasks();
+      if (t) {
+        const parsedUser = u ? JSON.parse(u) : null;
+        setToken(t, parsedUser);
+        fetchTasks();
+      }
+    } catch (e) {
+      console.error("Failed to restore auth from localStorage", e);
     }
-  } catch (e) {
-    console.error('Failed to restore auth from localStorage', e);
-  }
-});
+  });
 
-function formatDate(dateString) {
-  if (!dateString) return 'sin fecha';
-  try {
-    return new Date(dateString).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
-  } catch (e) {
-    return dateString;
+  function formatDate(dateString) {
+    if (!dateString) return "sin fecha";
+    try {
+      return new Date(dateString).toLocaleString("es-MX", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+    } catch (e) {
+      return dateString;
+    }
   }
-}
 </script>
 
 <svelte:head>
@@ -260,20 +286,25 @@ function formatDate(dateString) {
   <section class="card hero">
     <div>
       <p class="eyebrow">Ajolo-T</p>
-      <h1>Recordatorios con SQLite local</h1>
+      <h1>Recordatorios con AWS RDS</h1>
       <p class="lede">
-        Registra un usuario, inicia sesión y guarda tareas en <code>ajolotedb.db</code> usando las rutas del
-        backend Express en el puerto 3000.
+        Registra un usuario, inicia sesión y guarda tareas en <code
+          >ajolotedb.db</code
+        > usando las rutas del backend Express.
       </p>
       <div class="badges">
         <span class="pill">API: {API_BASE}</span>
-        <span class="pill muted">{token ? 'Sesión activa' : 'Sin sesión'}</span>
+        <span class="pill muted">{token ? "Sesión activa" : "Sin sesión"}</span>
         <span class="pill muted">{tasks.length} recordatorios</span>
       </div>
     </div>
     <!-- svelte-ignore a11y_missing_attribute -->
-    <div class="pulse" aria-hidden="true"><img src="https://png.pngtree.com/png-vector/20240717/ourmid/pngtree-axolotl-on-white-background-png-image_13135659.png"
-      alt="Ajolote flotando"></div>
+    <div class="pulse" aria-hidden="true">
+      <img
+        src="https://png.pngtree.com/png-vector/20240717/ourmid/pngtree-axolotl-on-white-background-png-image_13135659.png"
+        alt="Ajolote flotando"
+      />
+    </div>
   </section>
 
   <section class="card auth">
@@ -285,22 +316,39 @@ function formatDate(dateString) {
           <p class="meta">UUID: {user?.uuid}</p>
         </div>
         <div class="actions">
-          <button type="button" class="ghost" on:click={logout}>Cerrar sesión</button>
-          <button type="button" on:click={fetchTasks} disabled={loading}>Actualizar</button>
+          <button type="button" class="ghost" on:click={logout}
+            >Cerrar sesión</button
+          >
+          <button type="button" on:click={fetchTasks} disabled={loading}
+            >Actualizar</button
+          >
         </div>
       </div>
-      <p class="hint">Los recordatorios se guardan por usuario en la base local.</p>
+      <p class="hint">
+        Los recordatorios se guardan por usuario en la base de AWS.
+      </p>
     {:else}
       <div class="tabs">
-        <button class:active={!showRegister} type="button" on:click={() => (showRegister = false)}>
+        <button
+          class:active={!showRegister}
+          type="button"
+          on:click={() => (showRegister = false)}
+        >
           Iniciar sesión
         </button>
-        <button class:active={showRegister} type="button" on:click={() => (showRegister = true)}>
+        <button
+          class:active={showRegister}
+          type="button"
+          on:click={() => (showRegister = true)}
+        >
           Crear cuenta
         </button>
       </div>
 
-      <form class="form" on:submit|preventDefault={showRegister ? register : login}>
+      <form
+        class="form"
+        on:submit|preventDefault={showRegister ? register : login}
+      >
         <label>
           <span>Usuario</span>
           <input
@@ -318,7 +366,7 @@ function formatDate(dateString) {
             type="password"
             bind:value={password}
             placeholder="••••••••"
-            autocomplete={showRegister ? 'new-password' : 'current-password'}
+            autocomplete={showRegister ? "new-password" : "current-password"}
             required
           />
         </label>
@@ -328,7 +376,9 @@ function formatDate(dateString) {
         {/if}
 
         <button type="submit" disabled={logging}>
-          {#if logging}Procesando...{:else}{showRegister ? 'Registrarme' : 'Entrar'}{/if}
+          {#if logging}Procesando...{:else}{showRegister
+              ? "Registrarme"
+              : "Entrar"}{/if}
         </button>
         <p class="hint">Usa el mismo formulario para registrarte o entrar.</p>
       </form>
@@ -339,7 +389,7 @@ function formatDate(dateString) {
     <header class="section-head">
       <div>
         <p class="eyebrow">Mis recordatorios</p>
-        <h2>{tasks.length} {tasks.length === 1 ? 'tarea' : 'tareas'}</h2>
+        <h2>{tasks.length} {tasks.length === 1 ? "tarea" : "tareas"}</h2>
       </div>
       <div class="actions">
         {#if token}
@@ -349,13 +399,13 @@ function formatDate(dateString) {
             on:click={() => {
               showForm = !showForm;
               if (!showForm) {
-                editingUuid = '';
-                title = '';
-                description = '';
+                editingUuid = "";
+                title = "";
+                description = "";
               }
             }}
           >
-            {showForm ? 'Cerrar formulario' : 'Nuevo recordatorio'}
+            {showForm ? "Cerrar formulario" : "Nuevo recordatorio"}
           </button>
         {/if}
       </div>
@@ -369,7 +419,11 @@ function formatDate(dateString) {
           <div class="double">
             <label>
               <span>Título</span>
-              <input bind:value={title} placeholder="Revisar pendientes" required />
+              <input
+                bind:value={title}
+                placeholder="Revisar pendientes"
+                required
+              />
             </label>
             <label>
               <span>Descripción</span>
@@ -378,15 +432,15 @@ function formatDate(dateString) {
           </div>
           <div class="actions">
             <button type="submit" disabled={loading}>
-              {editingUuid ? 'Guardar cambios' : 'Crear recordatorio'}
+              {editingUuid ? "Guardar cambios" : "Crear recordatorio"}
             </button>
             <button
               type="button"
               class="ghost"
               on:click={() => {
-                editingUuid = '';
-                title = '';
-                description = '';
+                editingUuid = "";
+                title = "";
+                description = "";
                 showForm = false;
               }}
             >
@@ -411,12 +465,22 @@ function formatDate(dateString) {
             <li>
               <div>
                 <p class="title">{task.title}</p>
-                <p class="body">{task.description || 'Sin descripción'}</p>
-                <p class="meta">{formatDate(task.created_at)} · {task.uuid?.slice(0, 8)}</p>
+                <p class="body">{task.description || "Sin descripción"}</p>
+                <p class="meta">
+                  {formatDate(task.created_at)} · {task.uuid?.slice(0, 8)}
+                </p>
               </div>
               <div class="actions">
-                <button type="button" class="ghost" on:click={() => editTask(task)}>Editar</button>
-                <button type="button" class="ghost danger" on:click={() => deleteTask(task.uuid)}>Eliminar</button>
+                <button
+                  type="button"
+                  class="ghost"
+                  on:click={() => editTask(task)}>Editar</button
+                >
+                <button
+                  type="button"
+                  class="ghost danger"
+                  on:click={() => deleteTask(task.uuid)}>Eliminar</button
+                >
               </div>
             </li>
           {/each}
@@ -427,16 +491,24 @@ function formatDate(dateString) {
 </main>
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+  @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
 
   :global(body) {
     margin: 0;
     min-height: 100vh;
-    background: radial-gradient(circle at 10% 20%, rgba(14, 165, 233, 0.2), transparent 25%),
-      radial-gradient(circle at 80% 0%, rgba(45, 212, 191, 0.18), transparent 25%),
+    background: radial-gradient(
+        circle at 10% 20%,
+        rgba(14, 165, 233, 0.2),
+        transparent 25%
+      ),
+      radial-gradient(
+        circle at 80% 0%,
+        rgba(45, 212, 191, 0.18),
+        transparent 25%
+      ),
       #0b1020;
     color: #e2e8f0;
-    font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+    font-family: "Space Grotesk", "Segoe UI", sans-serif;
   }
 
   main.page {
@@ -462,7 +534,11 @@ function formatDate(dateString) {
     gap: 1rem;
     align-items: center;
     justify-content: space-between;
-    background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(45, 212, 191, 0.06));
+    background: linear-gradient(
+      135deg,
+      rgba(14, 165, 233, 0.12),
+      rgba(45, 212, 191, 0.06)
+    );
     border: 1px solid rgba(255, 255, 255, 0.12);
   }
 
@@ -597,7 +673,9 @@ function formatDate(dateString) {
     color: #0b1020;
     font-weight: 600;
     cursor: pointer;
-    transition: transform 0.1s ease, opacity 0.2s ease;
+    transition:
+      transform 0.1s ease,
+      opacity 0.2s ease;
   }
 
   button:disabled {
