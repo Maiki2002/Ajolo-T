@@ -1,0 +1,86 @@
+# Esta plantilla de AWS SAM se ha generado a partir de la configuración de su
+# función. Si su función tiene uno o más desencadenadores, tenga en cuenta que los
+# recursos de AWS asociados a estos desencadenadores no están completamente
+# especificados en esta plantilla e incluyen valores de marcadores de posición.
+# Abra esta plantilla en AWS Infrastructure Composer o en su IDE favorito y
+# modifíquela para especificar una aplicación sin servidor con otros recursos de
+# AWS.
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: An AWS Serverless Application Model template describing your function.
+Resources:
+  AjoloT:
+    Type: AWS::Serverless::Function
+    Properties:
+      Events:
+        HttpApi:
+         Type: HttpApi
+         Properties:
+          Path: /{proxy+}
+          Method: ANY
+      CodeUri: ./src
+      Description: >-
+        Blueprint for generating a response from viewer-request trigger
+        implemented in NodeJS.
+      MemorySize: 128
+      Timeout: 10
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      EphemeralStorage:
+        Size: 512
+      EventInvokeConfig:
+        MaximumEventAgeInSeconds: 21600
+        MaximumRetryAttempts: 2
+      PackageType: Zip
+      Environment:
+        Variables:
+          DB_HOST: !Ref DBHost
+          DB_PORT: !Ref DBPort
+          DB_USER: !Ref DBUser
+          DB_PASSWORD: !Ref DBPassword
+          DB_NAME: !Ref DBName
+          DB_CONN_LIMIT: !Ref DBConnLimit
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+              Resource: arn:aws:logs:us-east-1:406319199490:*
+            - Effect: Allow
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource:
+                - >-
+                  arn:aws:logs:us-east-1:406319199490:log-group:/aws/lambda/Ajolo-T:*
+      RecursiveLoop: Terminate
+      SnapStart:
+        ApplyOn: None
+      Tags:
+        lambda-console:blueprint: cloudfront-response-generation
+      RuntimeManagementConfig:
+        UpdateRuntimeOn: Auto
+Parameters:
+  DBHost:
+    Type: String
+    Description: Endpoint de RDS
+  DBPort:
+    Type: String
+    Default: '3306'
+    Description: Puerto de RDS
+  DBUser:
+    Type: String
+    Description: Usuario de RDS
+  DBPassword:
+    Type: String
+    NoEcho: true
+    Description: Password de RDS (usa Secrets Manager/SSM en prod)
+  DBName:
+    Type: String
+    Description: Nombre de la base de datos
+  DBConnLimit:
+    Type: String
+    Default: '4'
+    Description: Conexiones máximas del pool

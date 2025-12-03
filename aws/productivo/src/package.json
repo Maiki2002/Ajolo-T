@@ -1,0 +1,22 @@
+{
+  "name": "ajolo-t",
+  "version": "1.0.0",
+  "description": "To do list app",
+  "keywords": [
+    "AWS",
+    "Lambda"
+  ],
+  "license": "ISC",
+  "author": "Jorge Juarez, Miguel Jimenez",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^17.2.3",
+    "mysql2": "^3.15.3",
+    "uuid": "^13.0.0"
+  }
+}
