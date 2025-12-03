@@ -9,11 +9,13 @@ run = """
 chmod +x .mise/tasks/dev_local.py
 uv venv --clear
 uv pip install rich boto3
+cd svelte
 npm install
 """
 
-[tasks.dev]
+[tasks.dev_svelte]
 description = "Run the frontend development server"
+dir = "svelte"
 run = "npm run dev"
 
 [tasks.sam_build]

@@ -6,9 +6,9 @@ package-lock.json
 .vercel
 .netlify
 .wrangler
-/.svelte-kit
-/build
-/dist
+.svelte-kit
+build
+dist
 
 # OS
 .DS_Store
