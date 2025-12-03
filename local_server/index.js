@@ -27,7 +27,7 @@ app.use((req, res, next) => {
 // ------------------------------
 // Conexión a la base de datos SQLite
 // ------------------------------
-const dbPath = path.join(process.cwd(), 'server/data/ajolotedb.db');
+const dbPath = path.join(process.cwd(), 'local_server/data/ajolotedb.db');
 const db = new Database(dbPath);
 
 // ------------------------------

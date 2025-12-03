@@ -21,7 +21,7 @@ console = Console()
 
 LOG_LIMIT = 20
 DEFAULT_FRONTEND_CMD = "npm run dev"
-DEFAULT_BACKEND_CMD = "node server"
+DEFAULT_BACKEND_CMD = "npm run server"
 DEFAULT_FRONTEND_DIR = "."
 DEFAULT_BACKEND_DIR = "."
 

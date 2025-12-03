@@ -3,7 +3,7 @@
 	"version": "0.0.1",
 	"scripts": {
 		"dev": "vite dev",
-		"server": "node server/index.js",
+		"server": "node local_server/index.js",
 		"build": "vite build && npm run prepack",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -46,10 +46,10 @@
 		"svelte"
 	],
 	"dependencies": {
+		"@aws-sdk/client-lambda": "^3.942.0",
 		"bcryptjs": "^2.4.3",
 		"better-sqlite3": "^12.4.6",
 		"express": "^5.1.0",
-		"sql.js": "^1.13.0",
 		"uuid": "^13.0.0"
 	}
 }
